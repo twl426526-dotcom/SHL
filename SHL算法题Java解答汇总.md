@@ -775,29 +775,47 @@ public class Main {
 ## 12\. 马丁跑步速度枚举算法（快 5 年经验）
 
 ```Plain
-Question
-Martin is running with his father in the morning. His father's foot steps are given as an array of
-integers. Martin wants to run with the same speed as his father, such that he can step exactly on
-the foot steps of his father. Find the speed v of Martin, with which he can step on maximum of his
-father's foot steps. If there are multiple speeds, output the maximum one.
-Input
-The first line of the input consists of an integer N, representing the number of foot steps of Martin's
-father.
-The second line consists of N space-separated integers - steps, representing the foot steps of Martin's
-father.
-Output
-Print an integer representing the maximum speed v of Martin.
-Constraints
-2 ≤ N ≤ 1000
-0 ≤ steps[i] ≤ 10⁹
-Example
-Input:
-5
-0 4 6 8 12
-Output:
-2
-Explanation:
-With speed 2, Martin can step on 0,4,6,8,12. That's 5 steps.
+Martin’s father goes for a jog every morning. martin follows him several minutes later. his father starts at a position that is x1 meters away from their home and runs rectilinearly at a constant speed of v1 meters per step for n steps.
+
+martin is standing at x2 meters away from his home. he wonders how fast he must run at some constant speed of v2 meters per step so as to maximize f, where f equals the number of his father's footsteps that martin will land on during his run. it is given that the first step that martin will land on, from his starting position, will have been landed on by his father.
+
+note that if more than one prospective velocity results in the same number of maximum common steps, output the highest prospective velocity as v2.
+
+write an algorithm to help martin calculate f and v2.
+
+input
+
+the first line of the input consists of two space-separated integers - x1 and x2 representing the initial positions of martin’s father and martin, respectively.
+
+the second line consists of two space-separated integers - v1 and n representing the velocity of the father and the number of steps taken by the father, respectively.
+
+output
+
+print two space-separated integers as maximum number of common footsteps f and respective speed v2. constraints
+
+1 = x1 = 105
+
+0 = x2 = x1
+
+1 = v1 = 104
+
+1 = n = 104
+
+example
+
+input:
+
+3 2
+
+2 20
+
+output:
+
+21 1
+
+explanation:
+
+martin can have a maximum of 21 common footsteps with a velocity of 1 m/step.
 ```
 
 **解析**：
@@ -806,49 +824,64 @@ With speed 2, Martin can step on 0,4,6,8,12. That's 5 steps.
 ### Java 解答
 
 ```java
-import java.util.*;
-public class Main {
+import java.util.HashSet;
+import java.util.Scanner;
+import java.util.Set;
+
+public class MartinJog {
     public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        int n = sc.nextInt();
-        int[] steps = new int[n];
-        Set<Integer> stepSet = new HashSet<>();
-        for (int i = 0; i < n; i++) {
-            steps[i] = sc.nextInt();
-            stepSet.add(steps[i]);
+        Scanner scanner = new Scanner(System.in);
+        
+        // Input 1: x1 (father start), x2 (martin start)
+        int x1 = scanner.nextInt();
+        int x2 = scanner.nextInt();
+        
+        // Input 2: v1 (father speed), n (father steps)
+        int v1 = scanner.nextInt();
+        int n = scanner.nextInt();
+        scanner.close();
+
+        // Step 1: Store all father's positions in a Set (O(1) lookups)
+        Set<Integer> fatherPositions = new HashSet<>();
+        int fatherLastPos = x1 + n * v1;
+        for (int i = 0; i <= n; i++) {
+            fatherPositions.add(x1 + i * v1);
         }
-        Arrays.sort(steps);
 
-        int maxCount = 0;
-        int bestV = 0;
+        // Step 2: Calculate total distance Martin can run (until father's last position)
+        int totalDistance = fatherLastPos - x2;
+        if (totalDistance < 0) { // Martin starts ahead, no steps possible
+            System.out.println(1 + " " + 0);
+            return;
+        }
 
-        // 枚举所有两两差作为候选v
-        for (int i = 0; i < n; i++) {
-            for (int j = i + 1; j < n; j++) {
-                int v = steps[j] - steps[i];
-                if (v == 0) continue;
-                // 统计这个v能覆盖多少个点
-                int count = 0;
-                int current = steps[i];
-                while (stepSet.contains(current)) {
-                    count++;
-                    current += v;
+        int maxF = 1; // Minimum 1 (starting position x2)
+        int bestV2 = 0;
+
+        // Step 3: Iterate v2 from LARGEST to SMALLEST (to get max v2 for same f)
+        // v2 can't exceed totalDistance (1 step max)
+        for (int v2 = totalDistance; v2 >= 1; v2--) {
+            int currentCount = 1; // Start with the first position (x2)
+            int currentPos = x2;
+
+            // Count all common positions for this v2
+            while (true) {
+                currentPos += v2;
+                if (currentPos > fatherLastPos) break;
+                if (fatherPositions.contains(currentPos)) {
+                    currentCount++;
                 }
-                // 更新最优解
-                if (count > maxCount || (count == maxCount && v > bestV)) {
-                    maxCount = count;
-                    bestV = v;
-                }
+            }
+
+            // Update max f and best v2
+            if (currentCount > maxF) {
+                maxF = currentCount;
+                bestV2 = v2;
             }
         }
 
-        // 处理所有点都相同的情况（v=0）
-        if (maxCount == 0) {
-            // 所有点都一样，v可以是任意，选最大的？题目里steps都是非负，这里v=0
-            bestV = 0;
-        }
-
-        System.out.println(bestV);
+        // Output the result
+        System.out.println(maxF + " " + bestV2);
     }
 }
 ```
